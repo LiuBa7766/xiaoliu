@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>小敏救母</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+        }
+        .status-panel p {
+            margin: 10px 0;
+            font-size: 1.1em;
+            color: #34495e;
+        }
+        .action-panel button {
+            margin: 8px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+        .action-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        #buyBtn { background: #27ae60; color: white; }
+        #upgradeBtn { background: #f39c12; color: white; }
+        #produceBtn { background: #2980b9; color: white; }
+        #sellBtn { background: #e74c3c; color: white; }
+        #nextBtn { background: #9b59b6; color: white; }
+        .event-log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 8px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>小敏救母</h1>
+        <div class="status-panel">
+            <h3>当前状态（月份: <span id="month">1</span>）</h3>
+            <p>资金: $<span id="cash">10000</span></p>
+            <p>原材料库存: <span id="material">100</span> 单位</p>
+            <p>产品库存: <span id="product">0</span> 单位</p>
+            <p>生产等级: <span id="productionLevel">1</span></p>
+            <p>市场需求: <span id="demand">100</span> 单位/月（价格: $<span id="price">50</span>/单位）</p>
+            <p>母亲的健康状况: <span id="motherHealth">稳定</span></p>
+        </div>
+        <div class="action-panel">
+            <button id="buyBtn" onclick="buyMaterial(10)">
+                购买原材料（10单位，$500）
+            </button>
+            <button id="upgradeBtn" onclick="upgradeProduction()">
+                升级工厂（$2000）
+            </button>
+            <button id="produceBtn" onclick="produce()">
+                生产产品
+            </button>
+            <button id="sellBtn" onclick="sellProduct()">
+                出售产品
+            </button>
+            <button id="nextBtn" onclick="nextMonth()">
+                进入下个月
+            </button>
+        </div>
+        <div class="event-log" id="eventLog"></div>
+    </div>
+    <script>
+        let gameState = {
+            cash: 10000,
+            material: 100,
+            product: 0,
+            productionLevel: 1,
+            month: 1,
+            demand: 100,
+            price: 50,
+            goal: 50000, // 目标金额（治疗母亲的费用）
+            motherHealth: "稳定" // 母亲的健康状况
+        };
+
+        // 初始化时添加剧情背景
+        function logEvent(message, type = 'info') {
+            const log = document.getElementById('eventLog');
+            const color = {
+                info: '#3498db',
+                success: '#2ecc71',
+                warning: '#f1c40f',
+                danger: '#e74c3c'
+            }[type];
+            log.innerHTML += `<span style="color:${color}">[Month ${gameState.month}] ${message}</span><br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // 添加剧情背景
+        logEvent("剧情背景：小敏的母亲患上了乳腺癌，需要50000美元去国外治疗。但是现在小敏手上只有10000美元，决定通过创业赚钱来救她的母亲，你是她的好朋友，决定帮帮她。在她的家里，她邀请你帮助她购入原材料，生产原材料并卖出，而她负责协调进货商和市场调研。一起为这对可怜的母女做点什么吧！！！", 'info');
+
+        function buyMaterial(amount) {
+            const cost = amount * 50;
+            if (gameState.cash >= cost) {
+                gameState.cash -= cost;
+                gameState.material += amount;
+                logEvent(`✅ 购入 ${amount} 单位原材料，花费 $${cost}`, 'success');
+                updateUI();
+            } else {
+                logEvent('❌ 资金不足！', 'danger');
+            }
+        }
+
+        function upgradeProduction() {
+            if (gameState.cash >= 2000) {
+                gameState.cash -= 2000;
+                gameState.productionLevel++;
+                logEvent(`⚙️ 生产等级提升至 ${gameState.productionLevel}`, 'success');
+                updateUI();
+            } else {
+                logEvent('⚠️ 升级需要 $2000!', 'warning');
+            }
+        }
+
+        function produce() {
+            const maxProduct = Math.floor(gameState.material * gameState.productionLevel);
+            if (maxProduct > 0) {
+                gameState.product += maxProduct;
+                gameState.material = 0;
+                logEvent(`🏭 生产了 ${maxProduct} 个产品`, 'success');
+                updateUI();
+            } else {
+                logEvent('⚠️ 没有原材料可供生产！', 'warning');
+            }
+        }
+
+        function sellProduct() {
+            const sold = Math.min(gameState.product, gameState.demand);
+            const income = sold * gameState.price;
+            gameState.cash += income;
+            gameState.product -= sold;
+            logEvent(`💰 售出 ${sold} 单位产品，收入 $${income}`, 'success');
+            updateUI();
+        }
+
+        function nextMonth() {
+            gameState.month++;
+            if (Math.random() < 0.3) {
+                gameState.demand = Math.max(50, gameState.demand + Math.floor(Math.random() * 40 - 20));
+                gameState.price = Math.max(30, gameState.price + Math.floor(Math.random() * 20 - 10));
+                logEvent(`🌊 市场波动！新需求: ${gameState.demand} 单位，新价格: $${gameState.price}`, 'warning');
+            }
+
+            // 母亲的健康状况变化
+            if (gameState.cash < gameState.goal && Math.random() < 0.2) {
+                gameState.motherHealth = "恶化";
+                logEvent("⚠️ 母亲的健康状况恶化！请尽快筹集治疗费用！", 'danger');
+            } else {
+                gameState.motherHealth = "稳定";
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('cash').textContent = gameState.cash;
+            document.getElementById('material').textContent = gameState.material;
+            document.getElementById('product').textContent = gameState.product;
+            document.getElementById('productionLevel').textContent = gameState.productionLevel;
+            document.getElementById('month').textContent = gameState.month;
+            document.getElementById('demand').textContent = gameState.demand;
+            document.getElementById('price').textContent = gameState.price;
+            document.getElementById('motherHealth').textContent = gameState.motherHealth;
+
+            // 动态提示是否达到目标
+            if (gameState.cash >= gameState.goal) {
+                logEvent("🎉 你帮助小敏成功赚到了足够的钱！她的母亲可以接受治疗了！她很感激你。十年后，她给你买了一套汤臣一品。", 'success');
+            }
+        }
+
+        // 初始化界面
+        updateUI();
+    </script>
+</body>
+</html>
